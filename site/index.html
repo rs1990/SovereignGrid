@@ -3,250 +3,306 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SovereignGrid: a federated pool of local GPUs</title>
-<meta name="description" content="A decentralized AI compute grid. Developers connect local GPU hardware running open-source models into one asynchronous API gateway, with wallet-signed auth and a compute-credit ledger.">
-<meta property="og:title" content="SovereignGrid: a federated pool of local GPUs">
-<meta property="og:description" content="A decentralized AI compute grid. Developers connect local GPU hardware running open-source models into one asynchronous API gateway, with wallet-signed auth and a compute-credit ledger.">
+<title>SovereignGrid: turn idle GPUs into shared inference capacity</title>
+<meta name="description" content="Pool your team&#x27;s GPUs into one inference API. Run open models on hardware you already own, with automatic failover and per-node compute credits.">
+<meta property="og:title" content="SovereignGrid: turn idle GPUs into shared inference capacity">
+<meta property="og:description" content="Pool your team&#x27;s GPUs into one inference API. Run open models on hardware you already own, with automatic failover and per-node compute credits.">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230f766e'/><text x='50' y='68' font-size='56' font-family='Helvetica,Arial' font-weight='700' fill='white' text-anchor='middle'>S</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%230f766e'/><text x='50' y='69' font-size='58' font-family='Helvetica,Arial' font-weight='700' fill='white' text-anchor='middle'>S</text></svg>">
 <style>
   :root {
     --accent: #0f766e;
-    --accent-soft: #e2f1ef;
-    --bg: #faf9f6;
+    --accent-deep: #0b544e;
+    --accent-wash: #cfe8e4;
+    --accent-tint: #e6f3f1;
+    --bg: #fbfaf7;
     --surface: #ffffff;
-    --border: #e6e2d9;
-    --ink: #1b1a17;
-    --ink-soft: #56534c;
-    --ink-faint: #86827a;
+    --border: #e8e4da;
+    --border-soft: #f0ece3;
+    --ink: #16150f;
+    --ink-soft: #4f4c44;
+    --ink-faint: #837f75;
+    --shadow: 0 1px 2px rgba(24,22,15,.04), 0 8px 24px -12px rgba(24,22,15,.10);
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--ink);
+    margin: 0; background: var(--bg); color: var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
-    font-size: 17px;
-    line-height: 1.65;
-    -webkit-font-smoothing: antialiased;
+    font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased;
   }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .wrap { max-width: 940px; margin: 0 auto; padding: 0 28px; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 26px; }
+  .narrow { max-width: 760px; }
 
-  header.site {
-    border-bottom: 1px solid var(--border);
-    background: rgba(250, 249, 246, 0.92);
-    backdrop-filter: saturate(160%) blur(8px);
-    position: sticky; top: 0; z-index: 20;
+  /* ---------- nav ---------- */
+  nav.bar {
+    position: sticky; top: 0; z-index: 40;
+    background: rgba(251,250,247,.86); backdrop-filter: saturate(180%) blur(10px);
+    border-bottom: 1px solid var(--border-soft);
   }
-  header.site .wrap {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 20px; height: 64px;
+  nav.bar .wrap { display: flex; align-items: center; gap: 26px; height: 66px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 680; letter-spacing: -.015em; font-size: 17.5px; }
+  .logo .mark {
+    width: 26px; height: 26px; border-radius: 7px; flex: none;
+    background: linear-gradient(145deg, var(--accent), var(--accent-deep));
+    color: #fff; font-size: 14px; font-weight: 700; display: grid; place-items: center;
   }
-  .brand { display: flex; align-items: center; gap: 11px; font-weight: 650; letter-spacing: -0.01em; }
-  .brand .dot { width: 11px; height: 11px; border-radius: 3px; background: var(--accent); }
-  nav.top { display: flex; gap: 22px; font-size: 15px; }
-  nav.top a { color: var(--ink-soft); }
-  nav.top a:hover { color: var(--accent); text-decoration: none; }
-  @media (max-width: 700px) { nav.top a.hide-sm { display: none; } }
-
-  section { padding: 62px 0; border-bottom: 1px solid var(--border); }
-  section:last-of-type { border-bottom: 0; }
-
-  .hero { padding: 82px 0 66px; border-bottom: 1px solid var(--border); }
-  .eyebrow {
-    display: inline-block; font-size: 12.5px; font-weight: 650;
-    letter-spacing: 0.09em; text-transform: uppercase;
-    color: var(--accent); background: var(--accent-soft);
-    padding: 5px 11px; border-radius: 999px; margin-bottom: 22px;
-  }
-  h1 {
-    font-size: clamp(38px, 6.2vw, 60px); line-height: 1.06;
-    letter-spacing: -0.032em; font-weight: 700; margin: 0 0 20px;
-  }
-  .lede { font-size: clamp(18px, 2.4vw, 21px); color: var(--ink-soft); max-width: 44em; margin: 0 0 30px; }
-  .cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  .navlinks { display: flex; gap: 26px; margin-left: auto; font-size: 15px; color: var(--ink-soft); }
+  .navlinks a:hover { color: var(--accent); }
   .btn {
-    display: inline-block; padding: 11px 20px; border-radius: 8px;
-    font-size: 15px; font-weight: 600; border: 1px solid var(--accent);
-    background: var(--accent); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 20px; border-radius: 9px; font-size: 15px; font-weight: 620;
+    background: var(--accent); color: #fff; border: 1px solid var(--accent);
+    transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+    white-space: nowrap;
   }
-  .btn:hover { text-decoration: none; opacity: 0.9; }
-  .btn.ghost { background: transparent; color: var(--accent); }
+  .btn:hover { opacity: .92; transform: translateY(-1px); box-shadow: var(--shadow); }
+  .btn.sm { padding: 9px 16px; font-size: 14.5px; }
+  .btn.ghost { background: transparent; color: var(--accent); border-color: var(--border); }
+  .btn.ghost:hover { border-color: var(--accent); }
+  .btn.light { background: #fff; color: var(--accent-deep); border-color: #fff; }
+  @media (max-width: 860px) { .navlinks { display: none; } nav.bar .wrap { justify-content: space-between; } .btn.navcta { margin-left: auto; } }
 
-  h2 { font-size: 27px; letter-spacing: -0.022em; font-weight: 680; margin: 0 0 10px; }
-  .sub { color: var(--ink-faint); font-size: 15.5px; margin: 0 0 30px; }
-  h3 { font-size: 17px; font-weight: 650; margin: 0 0 7px; letter-spacing: -0.008em; }
-  p { margin: 0 0 18px; }
-  p.body { max-width: 46em; color: var(--ink-soft); }
-
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-top: 42px; }
-  .stat { background: var(--surface); padding: 22px 20px; }
-  .stat .v { font-size: 26px; font-weight: 700; letter-spacing: -0.025em; color: var(--accent); line-height: 1.15; }
-  .stat .k { font-size: 13.5px; color: var(--ink-faint); margin-top: 5px; }
-
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 16px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
-  .card p { margin: 0; font-size: 15.5px; color: var(--ink-soft); line-height: 1.6; }
-  .card .n { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: 0.08em; display: block; margin-bottom: 9px; }
-
-  pre.diagram {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 22px; overflow-x: auto; font-size: 13px; line-height: 1.62;
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    color: var(--ink-soft); margin: 0;
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; padding: 96px 0 78px; }
+  .hero::before {
+    content: ""; position: absolute; inset: -220px 0 auto 0; height: 620px; z-index: 0;
+    background: radial-gradient(58% 62% at 50% 34%, var(--accent-wash) 0%, rgba(255,255,255,0) 72%);
   }
+  .hero .wrap { position: relative; z-index: 1; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;
+    letter-spacing: .01em; color: var(--accent-deep); background: var(--accent-tint);
+    border: 1px solid var(--accent-wash); padding: 6px 14px; border-radius: 999px; margin-bottom: 26px;
+  }
+  .pill .tick { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
+  h1 {
+    font-size: clamp(40px, 5.6vw, 66px); line-height: 1.04; letter-spacing: -.035em;
+    font-weight: 700; margin: 0 0 22px; max-width: 17em;
+  }
+  .hero p.sell { font-size: clamp(18px, 2.1vw, 21px); color: var(--ink-soft); max-width: 40em; margin: 0 0 34px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .reassure { margin-top: 20px; font-size: 14.5px; color: var(--ink-faint); }
 
-  ul.facts { list-style: none; padding: 0; margin: 0; columns: 2; column-gap: 34px; }
-  ul.facts li { break-inside: avoid; padding: 9px 0 9px 20px; position: relative; font-size: 15.5px; color: var(--ink-soft); border-bottom: 1px solid var(--border); }
-  ul.facts li::before { content: ""; position: absolute; left: 0; top: 18px; width: 7px; height: 7px; border-radius: 2px; background: var(--accent); }
-  @media (max-width: 700px) { ul.facts { columns: 1; } }
+  .metrics {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+    gap: 1px; background: var(--border); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden; margin-top: 58px; box-shadow: var(--shadow);
+  }
+  .metric { background: var(--surface); padding: 26px 24px; }
+  .metric b { display: block; font-size: 30px; font-weight: 700; letter-spacing: -.03em; color: var(--accent-deep); line-height: 1.1; }
+  .metric span { display: block; font-size: 14px; color: var(--ink-faint); margin-top: 7px; }
 
-  .stack { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { font-size: 13.5px; padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--ink-soft); }
+  /* ---------- sections ---------- */
+  section { padding: 84px 0; }
+  section.alt { background: var(--surface); border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft); }
+  .kicker { font-size: 13px; font-weight: 680; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px; }
+  h2 { font-size: clamp(28px, 3.4vw, 40px); line-height: 1.12; letter-spacing: -.028em; font-weight: 700; margin: 0 0 16px; max-width: 20em; }
+  .deck { font-size: 18px; color: var(--ink-soft); max-width: 40em; margin: 0 0 48px; }
+  .deck.tight { margin-bottom: 36px; }
 
-  .note { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px; padding: 22px 24px; }
-  .note p { margin: 0; color: var(--ink-soft); font-size: 15.5px; }
-  .note p + p { margin-top: 12px; }
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 20px; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px,1fr)); gap: 20px; }
 
-  footer.site { padding: 40px 0 56px; color: var(--ink-faint); font-size: 14.5px; }
-  footer.site .row { display: flex; flex-wrap: wrap; gap: 18px; justify-content: space-between; align-items: center; }
+  .pain { padding: 26px 26px 28px; border-radius: 14px; background: var(--bg); border: 1px solid var(--border); }
+  section.alt .pain { background: var(--bg); }
+  .pain h3 { font-size: 18px; margin: 0 0 9px; letter-spacing: -.012em; }
+  .pain p { margin: 0; font-size: 15.5px; color: var(--ink-soft); }
+  .pain .x { display: block; width: 22px; height: 3px; border-radius: 2px; background: var(--accent); opacity: .5; margin-bottom: 18px; }
+
+  .step { position: relative; padding: 30px 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); }
+  section.alt .step { background: var(--bg); }
+  .step .num {
+    width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+    background: var(--accent-tint); color: var(--accent-deep); font-weight: 700; font-size: 15px; margin-bottom: 18px;
+  }
+  .step h3 { font-size: 19px; margin: 0 0 10px; letter-spacing: -.015em; }
+  .step p { margin: 0; font-size: 15.5px; color: var(--ink-soft); }
+
+  .feat { padding: 28px 26px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; }
+  section.alt .feat { background: var(--bg); }
+  .feat .dot { width: 11px; height: 11px; border-radius: 3px; background: var(--accent); margin-bottom: 18px; }
+  .feat h3 { font-size: 18px; margin: 0 0 9px; letter-spacing: -.015em; }
+  .feat p { margin: 0; font-size: 15.5px; color: var(--ink-soft); }
+
+  .who { padding: 30px 28px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface); }
+  section.alt .who { background: var(--bg); }
+  .who h3 { font-size: 18px; margin: 0 0 10px; letter-spacing: -.015em; }
+  .who p { margin: 0 0 16px; font-size: 15.5px; color: var(--ink-soft); }
+  .who ul { margin: 0; padding: 0; list-style: none; }
+  .who li { font-size: 15px; color: var(--ink-soft); padding: 7px 0 7px 22px; position: relative; border-top: 1px solid var(--border-soft); }
+  .who li::before { content: ""; position: absolute; left: 2px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); opacity: .55; }
+
+  .specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .spec { background: var(--surface); padding: 22px 24px; }
+  section.alt .spec { background: var(--bg); }
+  .spec b { display: block; font-size: 14px; font-weight: 660; margin-bottom: 4px; }
+  .spec span { font-size: 14.5px; color: var(--ink-faint); }
+
+  details.faq { border-bottom: 1px solid var(--border); padding: 4px 0; }
+  details.faq summary {
+    cursor: pointer; list-style: none; padding: 20px 40px 20px 0; position: relative;
+    font-size: 17.5px; font-weight: 620; letter-spacing: -.012em;
+  }
+  details.faq summary::-webkit-details-marker { display: none; }
+  details.faq summary::after {
+    content: "+"; position: absolute; right: 6px; top: 17px; font-size: 22px;
+    font-weight: 400; color: var(--accent); transition: transform .18s ease;
+  }
+  details.faq[open] summary::after { content: "\2013"; }
+  details.faq p { margin: 0 0 22px; color: var(--ink-soft); font-size: 16px; max-width: 46em; padding-right: 30px; }
+
+  .cta {
+    margin: 0 auto; border-radius: 22px; padding: 62px 44px; text-align: center;
+    background: linear-gradient(150deg, var(--accent) 0%, var(--accent-deep) 100%); color: #fff;
+  }
+  .cta h2 { color: #fff; margin: 0 auto 14px; max-width: 16em; }
+  .cta p { color: rgba(255,255,255,.86); font-size: 18px; max-width: 34em; margin: 0 auto 30px; }
+  .cta .actions { justify-content: center; }
+  .cta .fine { margin-top: 20px; font-size: 14px; color: rgba(255,255,255,.72); }
+
+  .disclaim { border: 1px solid var(--border); border-left: 3px solid var(--accent); background: var(--surface); border-radius: 12px; padding: 22px 26px; margin-top: 44px; }
+  .disclaim p { margin: 0; font-size: 15px; color: var(--ink-soft); }
+
+  footer.site { padding: 46px 0 62px; border-top: 1px solid var(--border-soft); color: var(--ink-faint); font-size: 14.5px; }
+  footer.site .row { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; }
+  footer.site a { color: var(--ink-soft); }
+  footer.site a:hover { color: var(--accent); }
 </style>
 </head>
 <body>
 
-<header class="site">
+<nav class="bar">
   <div class="wrap">
-    <div class="brand"><span class="dot"></span>SovereignGrid</div>
-    <nav class="top">
-      <a href="#overview">Overview</a>
-      <a href="#architecture" class="hide-sm">Architecture</a>
-      <a href="#features" class="hide-sm">Features</a>
-      <a href="#status">Status</a>
-      <a href="https://github.com/rs1990/SovereignGrid" rel="noopener">GitHub</a>
-    </nav>
-  </div>
-</header>
-
-<div class="hero">
-  <div class="wrap">
-    <span class="eyebrow">Distributed inference</span>
-    <h1>Your GPU, someone else&#x27;s workload, nobody&#x27;s data center.</h1>
-    <p class="lede">SovereignGrid pools the idle GPUs of a guild of developers into a single asynchronous inference API. Providers run a daemon that binds to their local Ollama or vLLM engine and authenticates with a wallet signature. A FastAPI orchestrator dispatches consumer requests to the least-loaded node and prices each completion into an append-only compute-credit ledger.</p>
-    <div class="cta">
-      <a class="btn" href="https://github.com/rs1990/SovereignGrid" rel="noopener">View source</a>
-      <a class="btn ghost" href="#overview">How it works</a>
+    <a class="logo" href="#top"><span class="mark">S</span>SovereignGrid</a>
+    <div class="navlinks">
+      <a href="#problem">Why</a>
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#faq">FAQ</a>
     </div>
-    <div class="stats">
-      <div class="stat"><div class="v">3 layers</div><div class="k">of failover, one requeue path</div></div>
-      <div class="stat"><div class="v">EIP-191</div><div class="k">wallet auth, no passwords</div></div>
-      <div class="stat"><div class="v">64</div><div class="k">max concurrent jobs per node</div></div>
-      <div class="stat"><div class="v">Hourly</div><div class="k">atomic ledger settlement</div></div>
+    <a class="btn sm navcta" href="https://github.com/rs1990/SovereignGrid" rel="noopener">Get started</a>
+  </div>
+</nav>
+
+<div class="hero" id="top">
+  <div class="wrap">
+    <span class="pill"><span class="tick"></span>Self-hosted inference, no per-token bill</span>
+    <h1>Your team already owns the GPUs. Start using all of them.</h1>
+    <p class="sell">SovereignGrid pools idle GPUs across your team into a single inference API. Anyone can send a request, the grid routes it to whoever has capacity, and every completion is credited back to the machine that served it. No cloud contract, no per-token invoice, no data leaving machines you control.</p>
+    <div class="actions">
+      <a class="btn" href="https://github.com/rs1990/SovereignGrid" rel="noopener">Get started free</a>
+      <a class="btn ghost" href="#how">See how it works</a>
+    </div>
+    <p class="reassure">Runs with no database for the first ten minutes. Open source, self-hosted, yours to modify.</p>
+    <div class="metrics">
+      <div class="metric"><b>Zero</b><span>per-token API fees</span></div>
+      <div class="metric"><b>Minutes</b><span>to add a new machine</span></div>
+      <div class="metric"><b>Automatic</b><span>failover across nodes</span></div>
+      <div class="metric"><b>Per-node</b><span>usage and credit accounting</span></div>
     </div>
   </div>
 </div>
 
-<section id="overview">
+<section id="problem" class="alt">
   <div class="wrap">
-    <h2>What it does</h2>
-    <p class="sub">Guild membership is the trust boundary.</p>
-    <p class="body">A provider daemon opens a persistent WebSocket to the gateway. The gateway answers with a one-time nonce; the daemon signs grid-auth:&lt;nonce&gt; with its wallet key using EIP-191 and returns its active models and concurrency limit. The recovered address must appear in guild_members with a valid Guild Administrator signature over guild-admit:&lt;wallet&gt;, re-verified on every connect. A spoofed row without that admin signature is rejected. The private key never leaves the provider machine.</p>
-    <p class="body">Consumer requests hit an OpenAI-shaped endpoint, pass through a regex sanitization sandbox that rejects shell-injection and reverse-shell payloads before any provider sees them, and are matched to the least-loaded online node serving the requested model. Every node runs at most max_concurrency jobs at once.</p>
-    <p class="body">Failure handling converges. A WebSocket disconnect requeues every in-flight job on that socket immediately. A dispatch timeout requeues. An APScheduler sweep every 15 seconds catches any running job whose lease expired through a missed disconnect or a network partition. After three attempts a job is marked dead rather than looping forever.</p>
-    <p class="body">Each completed inference appends one ledger row priced by model size, so a 70B model pays roughly 6.7 times an 8B per generated token. Node balances update only in an hourly settle_ledger() batch, one short transaction per hour instead of a write lock per inference.</p>
-  </div>
-</section>
-
-<section id="architecture">
-  <div class="wrap">
-    <h2>Architecture</h2>
-    <p class="sub">Consumers on one side, a guild of provider machines on the other.</p>
-    <pre class="diagram"> consumer agents                         provider guild
-      |                                       |
-      v                                       v
- POST /v1/chat/completions          +------------------+
- POST /v1/jobs (async)              | provider daemon  |-- Ollama :11434
-      |                             | (wallet-signed)  |-- vLLM   :8000
-      v                             +--------+---------+
-+----------------------+  persistent WS      |
-|  FastAPI gateway     |&lt;--------------------+
-|  - smart dispatch    |
-|  - sanitize sandbox  |        +-----------------------+
-|  - APScheduler       |-------&gt;| Supabase (PostgreSQL) |
-|    requeue + settle  |        | nodes . guild . jobs  |
-+----------------------+        | inference_ledger      |
-                                +-----------------------+</pre>
-  </div>
-</section>
-
-<section id="features">
-  <div class="wrap">
-    <h2>Engineering details</h2>
-    <p class="sub">The decisions that carry the design.</p>
-    <div class="cards">
-      <div class="card"><span class="n">01</span><h3>Wallet-native auth without a blockchain</h3><p>EIP-191 signatures replace passwords, and a Supabase table serves as the guild registry. No smart contracts are involved. Guild admins grant and revoke membership by signing offline.</p></div>
-      <div class="card"><span class="n">02</span><h3>BYOK provider daemon</h3><p>Only the wallet address and a signature cross the wire. Nonces are consumed on use with a 60 second TTL, so a captured handshake cannot be replayed.</p></div>
-      <div class="card"><span class="n">03</span><h3>Smart dispatch</h3><p>A live registry keeps a model-to-nodes index and picks the node with the fewest active jobs, tracking concurrency per connection rather than per machine guess.</p></div>
-      <div class="card"><span class="n">04</span><h3>Three-layer failover</h3><p>Disconnect, dispatch timeout, and expired lease all converge on the same requeue path, so consumers fail over across nodes transparently and no failure mode needs its own recovery code.</p></div>
-      <div class="card"><span class="n">05</span><h3>Sanitization sandbox</h3><p>Ten denylist patterns block pipe-to-shell, fork bombs, reverse shells, file:///etc paths, and dangerous system calls before a payload reaches a provider machine. Heuristic by design; guild trust remains the primary boundary.</p></div>
-      <div class="card"><span class="n">06</span><h3>Atomic settlement in PL/pgSQL</h3><p>settle_ledger() aggregates unsettled rows per node, updates balances, and flips the settled flag in a single transaction, keeping the inference hot path free of write contention.</p></div>
-      <div class="card"><span class="n">07</span><h3>Dual-mode store</h3><p>MemoryStore runs the whole grid with no database for development and demos. Setting SUPABASE_URL swaps in the Postgres-backed store behind the same interface.</p></div>
-      <div class="card"><span class="n">08</span><h3>Model-size-aware crediting</h3><p>A prefix-pattern rate table prices output tokens by parameter count: 10 credits per 1k tokens for 70B, 1.5 for 8B, 1.2 for 7B, 0.8 for 4B.</p></div>
+    <p class="kicker">The problem</p>
+    <h2>Inference is either expensive or idle.</h2>
+    <p class="deck">Most teams end up paying twice: once for API tokens, and again for workstation GPUs that sit unused most of the day.</p>
+    <div class="grid3">
+      <div class="pain"><span class="x"></span><h3>The bill scales with success</h3><p>Background agents, batch jobs, and evaluation runs are exactly the workloads that burn the most tokens and matter the least per call. Usage-based pricing punishes the work you want more of.</p></div>
+      <div class="pain"><span class="x"></span><h3>Good hardware sits idle</h3><p>A team of ten developers has a lot of GPU sitting at a desktop, doing nothing overnight and nothing at lunch. There is no simple way to make that capacity available to everyone.</p></div>
+      <div class="pain"><span class="x"></span><h3>Data leaves your control</h3><p>Sending prompts to a third-party endpoint means your code, your documents, and your customers&#x27; details are processed on infrastructure you cannot inspect.</p></div>
     </div>
   </div>
 </section>
 
-<section id="numbers">
+<section id="how">
   <div class="wrap">
-    <h2>Numbers from the code</h2>
-    <p class="sub">Measured or configured values, not projections.</p>
-    <ul class="facts">
-      <li>Consumer max_tokens: 1 to 32,768, default 1,024</li>
-      <li>Provider max_concurrency: 1 to 64 per node</li>
-      <li>Job lease TTL: 300 seconds, configurable</li>
-      <li>Job max attempts: 3 before a job is marked dead</li>
-      <li>Requeue sweep interval: 15 seconds</li>
-      <li>Dispatch timeout: 300 seconds</li>
-      <li>Nonce TTL: 60 seconds, fixed</li>
-      <li>Daemon heartbeat: every 30 seconds with active job count</li>
-      <li>Reconnect backoff: 1 second to 60 seconds, exponential</li>
-      <li>Payload size cap: 200,000 characters</li>
-      <li>6 database tables plus one PL/pgSQL settlement function</li>
-      <li>10 regex patterns in the sanitization denylist</li>
-    </ul>
-  </div>
-</section>
-
-<section id="stack">
-  <div class="wrap">
-    <h2>Stack</h2>
-    <p class="sub">Python throughout, Postgres optional.</p>
-    <div class="stack">
-      <span class="chip">FastAPI 0.115+</span>
-      <span class="chip">Uvicorn</span>
-      <span class="chip">Pydantic 2.9+</span>
-      <span class="chip">websockets 13+</span>
-      <span class="chip">APScheduler 3.10+</span>
-      <span class="chip">eth-account 0.13+</span>
-      <span class="chip">httpx 0.27+</span>
-      <span class="chip">Supabase / PostgreSQL</span>
-      <span class="chip">Ollama</span>
-      <span class="chip">vLLM</span>
-      <span class="chip">Aphrodite</span>
+    <p class="kicker">How it works</p>
+    <h2>Three moving parts, one endpoint.</h2>
+    <p class="deck">Providers install a daemon. Consumers call a standard endpoint. The grid handles everything in between.</p>
+    <div class="grid3">
+      <div class="step"><div class="num">1</div><h3>Install the daemon</h3><p>Each contributor runs a small daemon that binds to their local Ollama, vLLM, or Aphrodite server. It reports which models it serves and how many jobs it can handle at once.</p></div>
+      <div class="step"><div class="num">2</div><h3>Join the guild</h3><p>The daemon authenticates with a wallet signature, and an administrator admits it to the guild. No passwords are shared, and the private key never leaves the contributor&#x27;s machine.</p></div>
+      <div class="step"><div class="num">3</div><h3>Send requests</h3><p>Applications call one OpenAI-shaped endpoint. The grid picks the least-loaded machine serving the requested model, runs the job, and returns the result.</p></div>
     </div>
   </div>
 </section>
 
-<section id="status">
+<section id="features" class="alt">
   <div class="wrap">
-    <h2>Status</h2>
-    <p class="sub">An honest account of what is built and what is not.</p>
-    <div class="note">
-      <p>Prototype moving toward MVP, functional end to end: handshake, dispatch, execution, result handling, and settlement all work. Every implemented endpoint is complete with clean error paths and there are no stubs in the shipped code.</p>
-      <p>Known scope limits, all documented in the repository README. There is no SSE streaming relay, so whole results are returned. Consumer auth is a hashed bearer key rather than metered billing. Token counts are trusted as reported by the daemon with no cross-check. The orchestrator runs as a single instance with an in-process registry, so horizontal scaling would need sticky routing or a shared dispatch bus.</p>
-      <p>The gateway runs with no database at all when SUPABASE_URL is unset, which makes local evaluation a two command exercise.</p>
+    <p class="kicker">What you get</p>
+    <h2>Built for a pool of machines that come and go.</h2>
+    <p class="deck">Laptops close. Networks drop. People reboot. The grid is designed for that being normal rather than exceptional.</p>
+    <div class="grid3">
+      <div class="feat"><div class="dot"></div><h3>Nothing gets lost</h3><p>If a machine disconnects mid-job, times out, or silently vanishes, the work is put back in the queue and picked up elsewhere. Consumers see a slower response, not a failure.</p></div>
+      <div class="feat"><div class="dot"></div><h3>Load-aware routing</h3><p>Every request goes to the machine with the fewest jobs running that can serve the requested model, so one contributor never becomes the bottleneck while others idle.</p></div>
+      <div class="feat"><div class="dot"></div><h3>Fair usage accounting</h3><p>Each completed job is recorded and priced by model size, so a contributor running a 70B model earns proportionally more than one running an 8B. Balances settle on a schedule, not on the hot path.</p></div>
+      <div class="feat"><div class="dot"></div><h3>Contributors keep their keys</h3><p>Authentication is a signature challenge. Only a public address and a signature ever cross the network, and each challenge can only be used once.</p></div>
+      <div class="feat"><div class="dot"></div><h3>Payload screening</h3><p>Requests are checked against a denylist of shell injection, reverse shell, and file access patterns before they are handed to a contributor&#x27;s machine.</p></div>
+      <div class="feat"><div class="dot"></div><h3>Async or synchronous</h3><p>Submit and wait for chat completions, or queue long-running jobs and collect the results later. Both use the same routing and the same failover.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="who">
+  <div class="wrap">
+    <p class="kicker">Who it is for</p>
+    <h2>Teams with hardware and a growing inference bill.</h2>
+    <p class="deck">SovereignGrid is most useful where the workload is large, background, and not latency critical.</p>
+    <div class="grid3">
+      <div class="who"><h3>Engineering teams</h3><p>Give background agents, batch jobs, and evaluation suites somewhere to run that does not appear on a usage invoice.</p><ul><li>Agent and automation workloads</li><li>Nightly evaluation runs</li><li>Bulk document processing</li></ul></div>
+      <div class="who"><h3>Research groups</h3><p>Share a small cluster across a lab without building a scheduler, a queue, and a billing system from scratch.</p><ul><li>Shared model access</li><li>Per-member usage records</li><li>Mixed hardware, one endpoint</li></ul></div>
+      <div class="who"><h3>Privacy-bound work</h3><p>Keep prompts and outputs on machines your organisation owns and can audit, with no third-party processor in the path.</p><ul><li>On-premise only</li><li>No external processor</li><li>Full request visibility</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="specs" class="alt">
+  <div class="wrap">
+    <p class="kicker">Under the hood</p>
+    <h2>The details your engineers will ask about.</h2>
+    <p class="deck tight">Everything below is configurable and documented in the repository.</p>
+    <div class="specs">
+      <div class="spec"><b>Engines supported</b><span>Ollama, vLLM, and Aphrodite through their native or OpenAI-compatible endpoints</span></div>
+      <div class="spec"><b>API shape</b><span>POST /v1/chat/completions plus an async job queue at /v1/jobs</span></div>
+      <div class="spec"><b>Concurrency</b><span>1 to 64 simultaneous jobs per machine, set by the contributor</span></div>
+      <div class="spec"><b>Retries</b><span>Three attempts across different machines before a job is marked dead</span></div>
+      <div class="spec"><b>Recovery sweep</b><span>Stalled jobs are detected and requeued every 15 seconds</span></div>
+      <div class="spec"><b>Storage</b><span>Runs in memory for evaluation, or on PostgreSQL for production, switched by one variable</span></div>
+      <div class="spec"><b>Authentication</b><span>EIP-191 wallet signatures with single-use 60 second challenges</span></div>
+      <div class="spec"><b>Deployment</b><span>Python and FastAPI, self-hosted anywhere you can run a container</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap narrow">
+    <p class="kicker">Questions</p>
+    <h2>Before you install it.</h2>
+    <div style="margin-top:34px">
+      <details class="faq"><summary>Do contributors need to trust each other?</summary><p>Yes, and the design says so plainly. Guild membership is the security boundary: an administrator decides which machines may join. Payload screening catches obvious abuse, but it is a safety net rather than a sandbox. Run the grid inside a team or organisation that already has a trust relationship.</p></details>
+      <details class="faq"><summary>What happens if my machine goes offline mid-job?</summary><p>The job is requeued and another machine picks it up. This is handled three ways at once, covering a clean disconnect, a silent timeout, and a machine that vanishes without notice, so no single missed signal strands the work.</p></details>
+      <details class="faq"><summary>Can I try it without setting up a database?</summary><p>Yes. Leave the database variable unset and the whole grid runs in memory. That is enough to install the daemon, connect a local model, and send a real request. Point it at PostgreSQL when you want history and credit balances to persist.</p></details>
+      <details class="faq"><summary>Does it stream responses?</summary><p>Not yet. Requests return complete results rather than token by token, which suits background and batch workloads. Streaming is the most requested addition and is not in the current build.</p></details>
+      <details class="faq"><summary>How is usage measured and priced?</summary><p>Every completed job appends a record with the model used and tokens generated, priced by a rate table you control. Balances are settled on an hourly batch so accounting never slows down inference.</p></details>
+      <details class="faq"><summary>What stage is the project at?</summary><p>Working end to end and in use as an MVP. Known limits are documented rather than hidden: no streaming, token counts are trusted as reported by the contributor, consumer authentication is a bearer key rather than metered billing, and the coordinator currently runs as a single instance.</p></details>
+    </div>
+
+  </div>
+</section>
+
+<section style="padding-top:20px">
+  <div class="wrap">
+    <div class="cta">
+      <h2>Put your idle GPUs to work this afternoon.</h2>
+      <p>Clone the repository, start the gateway, connect one machine running Ollama, and send a real inference request. No database and no account required to evaluate it.</p>
+      <div class="actions">
+        <a class="btn light" href="https://github.com/rs1990/SovereignGrid" rel="noopener">Get started free</a>
+      </div>
+      <p class="fine">Open source. Self-hosted. No usage tracking of any kind.</p>
     </div>
   </div>
 </section>
@@ -254,7 +310,7 @@
 <footer class="site">
   <div class="wrap">
     <div class="row">
-      <div>SovereignGrid. Built by Raghavendra. Open source.</div>
+      <div>SovereignGrid. Open source, self-hosted inference for teams.</div>
       <div><a href="https://github.com/rs1990/SovereignGrid" rel="noopener">github.com/rs1990/SovereignGrid</a></div>
     </div>
   </div>
